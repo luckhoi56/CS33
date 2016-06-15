@@ -1,0 +1,16 @@
+/*Katrina Wijaya
+704598596
+CS 33 -- Dis 1I
+Homework #3*/
+
+void transpose_new(int *dst, int *src, int dim)
+{
+	int i, j, ik, jk;
+	int block = 8;
+
+	for (i = 0; i < dim; i += block)
+		for (j = 0; j < dim; j += block)
+			for (ik = i; (ik < i + block) && (ik < dim); ik++)
+				for (jk = j; (jk < j + block) && (jk < dim); jk++)
+					dst[jk*dim + ik] = src[ik*dim + jk];
+}

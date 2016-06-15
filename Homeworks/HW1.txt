@@ -1,0 +1,45 @@
+Katrina Wijaya
+CS 33 — 1B
+11 April 2016
+
+Homework 1
+
+2.71
+/* Failed attempt at xbyte */
+int xbyte(packed_t word, int bytenum)
+{
+        return (word >> (bytenum << 3)) & 0xFF;
+}
+
+A. This code does not do sign extension when extracting a byte and extending it into a 32-bit int.
+B. Give a correct implementation of the function that uses only left and right shifts, along with one subtraction.
+
+int xbyte(packed_t word, int bytenum)
+{
+	//get how many bits to shift
+	int shift = (3 - bytenum) << 3;
+
+	//shift word to the left until desired byte is most significant
+	//also cast to int so we can do an arithmetic right shift (vs logical)
+	int byte = word << shift;
+
+	//shift word 24 bits to the left for sign extension
+	return byte >> 24;
+}
+
+2.82
+
+A. (x < y) == (-x > -y) 
+No, does not always yield 1. When x = TMin and y = TMin + 1,  (x < y) is true. However, -x = -TMin which for a 32-bit signed integer is 2,147,483,648. However, TMax is 2,147,483,647, so overflow causes -x to equal 0. Thus, (-x > -y) = (0 > 2,147,483,647) which is false, showing that this is a case where this expression does not yield 1.
+
+B. ((x + y) << 4) + y - x == 17*y + 15*x 
+Yes, this yields 1 due to distributive properties. (x + y) << 4 is equivalent to x << 4 + y << 4, or 16*x + 16*y. The + y – x makes the left side of the expression 17*y + 15*x, which is equivalent to the right side of the expression.
+
+C. ~x + ~y + 1 == ~(x + y) 
+Yes, this yields 1 due to negation. We know that x + ~x = -1. If we treat (x + y) as one term, then (x + y) + ~(x + y) = -1. Shifting things around with algebra, we get ~(x + y) = -1 - x - y. Going back to x + ~x = -1, we can replace -x and -y with (1 + ~x) and (1 + ~y) respectively. Thus, we get ~(x + y) = -1  + 1 + ~x + 1 + ~y, which simplifies to ~(x + y) = ~x + ~y + 1, the expression we wished to show always yielded 1. 
+
+D. (ux - uy) == -(unsigned)(y - x) 
+Yes, this yields 1 because casting does not change the bit pattern; things on the bit-level remain the same. Operators act independently of the signed/unsigned status of integers. 
+
+E. ((x >> 2) << 2) <= x
+Yes, this yields 1 because the shifts x undergoes cause it to lose value, not gain value. The initial right shift, (x >> 2), causes the 2 extra bits to the right to be thrown away. The second left shift, (x << 2), puts us back in the same position as we started, but still missing the two bits lost in the right shift. In the event that the two bits that would have been thrown away were 0s, then ((x >> 2) << 2) would = x. However, the expression we are considering compares using <= so this would still yield 1. 
