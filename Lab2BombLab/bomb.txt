@@ -1,0 +1,420 @@
+-~*Phase 1*~-
+
+I can see Russia from my house!
+
+gdb bomb
+break phase_1
+break explode_bomb
+run
+This is a test string for phase 1
+disassemble *or objdump*		//look at what is stored in %eax, what address phase 1 string
+p/x $eax				//get address of %eax
+x /25c *address of eax*			//should be our test string
+x /25x *address of phase 1 string*	//from the mov *address*, %esi of disassemble
+quit
+y
+strings bomb				//copy paste phase 1 string
+gdb bomb
+break explode_bomb
+r
+*phase 1 string*
+
+-~*Phase 2*~-
+
+1 2 4 7 11 16
+
+000000000040102b <phase_2>:
+  40102b:       55                      push   %rbp
+  40102c:       53                      push   %rbx
+  40102d:       48 83 ec 28             sub    $0x28,%rsp			//make room on stack
+  401031:       48 89 e6                mov    %rsp,%rsi
+  401034:       e8 67 04 00 00          callq  4014a0 <read_six_numbers>
+  401039:       83 3c 24 00             cmpl   $0x0,(%rsp)			//compare to 0
+  40103d:       79 05                   jns    401044 <phase_2+0x19>		//continue if +, explode otherwise
+  40103f:       e8 26 04 00 00          callq  40146a <explode_bomb>
+
+  401044:       48 8d 5c 24 04          lea    0x4(%rsp),%rbx		//rbx = #2 	//rsp = #1
+  401049:       bd 01 00 00 00          mov    $0x1,%ebp		//ebp = 1
+
+  40104e:       89 e8                   mov    %ebp,%eax		//eax = ebp	//LOOPS TO HERE
+  401050:       03 43 fc                add    -0x4(%rbx),%eax		//eax = #(rbx-1) + ebp
+  401053:       39 03                   cmp    %eax,(%rbx)
+  401055:       74 05                   je     40105c <phase_2+0x31>	//#1, #1 + 1, #2 + 2, #3 + 3, #4 + 4, #5 + 5	//1, 2, 4, 7, 11, 16
+  401057:       e8 0e 04 00 00          callq  40146a <explode_bomb>
+
+  40105c:       83 c5 01                add    $0x1,%ebp		//epb = ebp + 1
+  40105f:       48 83 c3 04             add    $0x4,%rbx		//rbx = #(rbx+1)
+  401063:       83 fd 06                cmp    $0x6,%ebp		//loop condition
+  401066:       75 e6                   jne    40104e <phase_2+0x23>	//not equal (6 & epb) 
+
+  401068:       48 83 c4 28             add    $0x28,%rsp		//remove that room on stack
+  40106c:       5b                      pop    %rbx
+  40106d:       5d                      pop    %rbp
+  40106e:       c3                      retq
+
+-~*Phase 3*~-
+
+3 v 857
+
+0000000000401146 <phase_3>:
+  401146:       48 83 ec 18             sub    $0x18,%rsp
+  40114a:       48 8d 4c 24 07          lea    0x7(%rsp),%rcx
+  40114f:       48 8d 54 24 0c          lea    0xc(%rsp),%rdx
+  401154:       4c 8d 44 24 08          lea    0x8(%rsp),%r8
+  401159:       be 2f 24 40 00          mov    $0x40242f,%esi			//%d %c %d (int char int)
+  40115e:       b8 00 00 00 00          mov    $0x0,%eax
+  401163:       e8 60 f9 ff ff          callq  400ac8 <__isoc99_sscanf@plt>	//eax is first input??
+  401168:       83 f8 02                cmp    $0x2,%eax			//2 and eax
+  40116b:       7f 05                   jg     401172 <phase_3+0x2c>		//input size must be greater than 2
+  40116d:       e8 f8 02 00 00          callq  40146a <explode_bomb>
+  401172:       83 7c 24 0c 07          cmpl   $0x7,0xc(%rsp)			//7 and rsp (first int??)
+  401177:       0f 87 f2 00 00 00       ja     40126f <phase_3+0x129>		//if above 7, jump to EXPLODE
+  40117d:       8b 44 24 0c             mov    0xc(%rsp),%eax			//eax = rsp
+  401181:       ff 24 c5 40 24 40 00    jmpq   *0x402440(,%rax,8)		//jump table (Jumps to 4011e9 if first is 3)
+  401188:       b8 68 00 00 00          mov    $0x68,%eax
+  40118d:       81 7c 24 08 d2 00 00    cmpl   $0xd2,0x8(%rsp)	
+  401194:       00
+  401195:       0f 84 e5 00 00 00       je     401280 <phase_3+0x13a>	
+  40119b:       e8 ca 02 00 00          callq  40146a <explode_bomb>
+  4011a0:       b8 68 00 00 00          mov    $0x68,%eax
+  4011a5:       e9 d6 00 00 00          jmpq   401280 <phase_3+0x13a>
+  4011aa:       b8 72 00 00 00          mov    $0x72,%eax
+  4011af:       81 7c 24 08 0b 02 00    cmpl   $0x20b,0x8(%rsp)
+  4011b6:       00
+  4011b7:       0f 84 c3 00 00 00       je     401280 <phase_3+0x13a>
+  4011bd:       e8 a8 02 00 00          callq  40146a <explode_bomb>
+  4011c2:       b8 72 00 00 00          mov    $0x72,%eax
+  4011c7:       e9 b4 00 00 00          jmpq   401280 <phase_3+0x13a>
+  4011cc:       81 7c 24 08 0d 03 00    cmpl   $0x30d,0x8(%rsp)
+  4011d3:       00
+  4011d4:       0f 84 a1 00 00 00       je     40127b <phase_3+0x135>
+  4011da:       e8 8b 02 00 00          callq  40146a <explode_bomb>
+  4011df:       b8 6f 00 00 00          mov    $0x6f,%eax
+  4011e4:       e9 97 00 00 00          jmpq   401280 <phase_3+0x13a>
+  4011e9:       b8 76 00 00 00          mov    $0x76,%eax	//if int = 3! here!	//eax = 118
+  4011ee:       81 7c 24 08 59 03 00    cmpl   $0x359,0x8(%rsp)				//857 = (rsp) + 8
+  4011f5:       00
+  4011f6:       0f 84 84 00 00 00       je     401280 <phase_3+0x13a>			//if equal jump to 1280
+  4011fc:       e8 69 02 00 00          callq  40146a <explode_bomb>
+  401201:       b8 76 00 00 00          mov    $0x76,%eax
+  401206:       eb 78                   jmp    401280 <phase_3+0x13a>
+  401208:       b8 61 00 00 00          mov    $0x61,%eax
+  40120d:       81 7c 24 08 82 00 00    cmpl   $0x82,0x8(%rsp)
+  401214:       00
+  401215:       74 69                   je     401280 <phase_3+0x13a>
+  401217:       e8 4e 02 00 00          callq  40146a <explode_bomb>
+  40121c:       b8 61 00 00 00          mov    $0x61,%eax
+  401221:       eb 5d                   jmp    401280 <phase_3+0x13a>
+  401223:       81 7c 24 08 6c 02 00    cmpl   $0x26c,0x8(%rsp)
+  40122a:       00
+  40122b:       74 4e                   je     40127b <phase_3+0x135>
+  40122d:       e8 38 02 00 00          callq  40146a <explode_bomb>
+  401232:       b8 6f 00 00 00          mov    $0x6f,%eax
+  401237:       eb 47                   jmp    401280 <phase_3+0x13a>
+  401239:       b8 6b 00 00 00          mov    $0x6b,%eax
+  40123e:       81 7c 24 08 2e 01 00    cmpl   $0x12e,0x8(%rsp)
+  401245:       00
+  401246:       74 38                   je     401280 <phase_3+0x13a>
+  401248:       e8 1d 02 00 00          callq  40146a <explode_bomb>
+  40124d:       b8 6b 00 00 00          mov    $0x6b,%eax
+  401252:       eb 2c                   jmp    401280 <phase_3+0x13a>
+  401254:       b8 78 00 00 00          mov    $0x78,%eax
+  401259:       81 7c 24 08 15 03 00    cmpl   $0x315,0x8(%rsp)
+  401260:       00									
+  401261:       74 1d                   je     401280 <phase_3+0x13a>			//if >7 EXPLODE
+  401263:       e8 02 02 00 00          callq  40146a <explode_bomb>
+  401268:       b8 78 00 00 00          mov    $0x78,%eax
+  40126d:       eb 11                   jmp    401280 <phase_3+0x13a>
+  40126f:       e8 f6 01 00 00          callq  40146a <explode_bomb>
+  401274:       b8 78 00 00 00          mov    $0x78,%eax
+  401279:       eb 05                   jmp    401280 <phase_3+0x13a>
+  40127b:       b8 6f 00 00 00          mov    $0x6f,%eax
+  401280:       3a 44 24 07             cmp    0x7(%rsp),%al	//JUMP HERE if equal	//(rsp)+7 and %al //p/x $al == 0x76 == v
+  401284:       74 05                   je     40128b <phase_3+0x145>			//if equal, GOOD
+  401286:       e8 df 01 00 00          callq  40146a <explode_bomb>
+  40128b:       48 83 c4 18             add    $0x18,%rsp				//done
+  40128f:       c3                      retq
+
+-~*Phase 4*~-
+
+6 21 DrEvil
+
+00000000004010e9 <phase_4>:
+  4010e9:       48 83 ec 18             sub    $0x18,%rsp
+  4010ed:       48 8d 4c 24 08          lea    0x8(%rsp),%rcx
+  4010f2:       48 8d 54 24 0c          lea    0xc(%rsp),%rdx
+  4010f7:       be fa 24 40 00          mov    $0x4024fa,%esi			//looks important
+  4010fc:       b8 00 00 00 00          mov    $0x0,%eax
+  401101:       e8 c2 f9 ff ff          callq  400ac8 <__isoc99_sscanf@plt>
+  401106:       83 f8 02                cmp    $0x2,%eax			//2 and eax
+  401109:       75 0d                   jne    401118 <phase_4+0x2f>		//if NOT 2... EXPLODE (Need 2 inputs)
+  40110b:       8b 44 24 0c             mov    0xc(%rsp),%eax			//eax = (rsp)
+  40110f:       85 c0                   test   %eax,%eax
+  401111:       78 05                   js     401118 <phase_4+0x2f>		//(rsp) 1st input must be 0???
+  401113:       83 f8 0e                cmp    $0xe,%eax			//14 and eax
+  401116:       7e 05                   jle    40111d <phase_4+0x34>		//jump if less or equal (must be <=14)
+  401118:       e8 4d 03 00 00          callq  40146a <explode_bomb>
+  40111d:       ba 0e 00 00 00          mov    $0xe,%edx			//edx = 14
+  401122:       be 00 00 00 00          mov    $0x0,%esi			//esi = 0
+  401127:       8b 7c 24 0c             mov    0xc(%rsp),%edi			//edi = (rsp) first input
+  40112b:       e8 40 fd ff ff          callq  400e70 <func4>
+  401130:       83 f8 15                cmp    $0x15,%eax			//eax = func4 output
+  401133:       75 07                   jne    40113c <phase_4+0x53>		//func4 output MUST be 21
+  401135:       83 7c 24 08 15          cmpl   $0x15,0x8(%rsp)			//21 and ((rsp)+8) second input
+  40113a:       74 05                   je     401141 <phase_4+0x58>		//second input = 21
+  40113c:       e8 29 03 00 00          callq  40146a <explode_bomb>
+  401141:       48 83 c4 18             add    $0x18,%rsp
+  401145:       c3                      retq
+
+0000000000400e70 <func4>:
+  400e70:       53                      push   %rbx
+  400e71:       89 d0                   mov    %edx,%eax		//eax = edx
+  400e73:       29 f0                   sub    %esi,%eax		//eax = eax - esi
+  400e75:       89 c3                   mov    %eax,%ebx		//ebx = eax
+  400e77:       c1 eb 1f                shr    $0x1f,%ebx		//ebx = logical shift right by 31
+  400e7a:       8d 04 03                lea    (%rbx,%rax,1),%eax	//eax = rbx (1 or 0) + rax
+  400e7d:       d1 f8                   sar    %eax			//shift right 1 (/2)
+  400e7f:       8d 1c 30                lea    (%rax,%rsi,1),%ebx	//ebx = rax + rsi = eax
+  400e82:       39 fb                   cmp    %edi,%ebx		//edi = first input
+  400e84:       7e 0c                   jle    400e92 <func4+0x22>	//less than = jump (ebx <= input)
+  400e86:       8d 53 ff                lea    -0x1(%rbx),%edx		//edx = (rbx)-1
+  400e89:       e8 e2 ff ff ff          callq  400e70 <func4>		//recursive fcn call func4 (rbx - 1)
+  400e8e:       01 c3                   add    %eax,%ebx		//ebx = eax + ebx
+  400e90:       eb 0e                   jmp    400ea0 <func4+0x30>
+  400e92:       39 fb                   cmp    %edi,%ebx		//go here if less than	
+  400e94:       7d 0a                   jge    400ea0 <func4+0x30>	//greater than = jump
+  400e96:       8d 73 01                lea    0x1(%rbx),%esi		//esi = rbx + 1
+  400e99:       e8 d2 ff ff ff          callq  400e70 <func4>		//recursive fcn call func4 (rbx + 1)
+  400e9e:       01 c3                   add    %eax,%ebx		//ebx = eax + ebx (func4(rbx-1) + func4(rbx+1))
+  400ea0:       89 d8                   mov    %ebx,%eax		//eax = ebx 
+  400ea2:       5b                      pop    %rbx
+  400ea3:       c3                      retq
+
+-~*Phase 5*~-
+
+gamfeg
+
+000000000040106f <phase_5>:
+  40106f:       53                      push   %rbx
+  401070:       48 83 ec 10             sub    $0x10,%rsp
+  401074:       48 89 fb                mov    %rdi,%rbx		//rbx = rdi = input
+  401077:       e8 14 02 00 00          callq  401290 <string_length>
+  40107c:       83 f8 06                cmp    $0x6,%eax		//string must be 6 chars long
+  40107f:       74 05                   je     401086 <phase_5+0x17>
+  401081:       e8 e4 03 00 00          callq  40146a <explode_bomb>
+  401086:       48 89 e0                mov    %rsp,%rax		
+  401089:       48 8d 73 06             lea    0x6(%rbx),%rsi		//rsi = (rbx) + 6 (rsi are the other bytes besides string)
+  40108d:       ba 80 24 40 00          mov    $0x402480,%edx		//edx = maduiersnfotvbylInvalid phase%s\n
+
+  401092:       48 0f be 0b             movsbq (%rbx),%rcx		//rcx = sign extended (rbx) = string	//JUMP HERE UNTIL =
+  401096:       83 e1 0f                and    $0xf,%ecx		//get last byte of ecx so only 1 char of string
+  401099:       0f b6 0c 0a             movzbl (%rdx,%rcx,1),%ecx	//ecx = rdx + rcx (no sign extension, leading 0s)
+  40109d:       88 08                   mov    %cl,(%rax)		//(rax) = cl (first charof input) cl in rcx (cl changes)
+
+  40109f:       48 83 c3 01             add    $0x1,%rbx		//rbx = rbx + 1 (cut off one char)
+  4010a3:       48 83 c0 01             add    $0x1,%rax		//rax = rax + 1 (cut off one char)
+  4010a7:       48 39 f3                cmp    %rsi,%rbx
+  4010aa:       75 e6                   jne    401092 <phase_5+0x23>	//if not equal/empty go up again (loop)
+  4010ac:       c6 44 24 06 00          movb   $0x0,0x6(%rsp)		//(rsp)+6 = 0 (blanks out everything but first 6 chars)
+  4010b1:       48 89 e7                mov    %rsp,%rdi		//rdi = rsp (translated input)
+  4010b4:       be 28 24 40 00          mov    $0x402428,%esi		//esi = sabres
+  4010b9:       e8 ee 01 00 00          callq  4012ac <strings_not_equal>
+  4010be:       85 c0                   test   %eax,%eax
+  4010c0:       74 05                   je     4010c7 <phase_5+0x58>	//must be equal (compares esi and edi)
+  4010c2:       e8 a3 03 00 00          callq  40146a <explode_bomb>
+  4010c7:       48 83 c4 10             add    $0x10,%rsp
+  4010cb:       5b                      pop    %rbx
+  4010cc:       c3                      retq
+
+-~*Phase 6*~-
+
+0000000000400f30 <phase_6>:
+  400f30:       41 54                   push   %r12
+  400f32:       55                      push   %rbp
+  400f33:       53                      push   %rbx
+  400f34:       48 83 ec 50             sub    $0x50,%rsp			//rsp = rsp - 0x50
+  400f38:       48 8d 6c 24 30          lea    0x30(%rsp),%rbp			//rbp = rsp + 0x30
+  400f3d:       48 89 ee                mov    %rbp,%rsi
+
+  400f40:       e8 5b 05 00 00          callq  4014a0 <read_six_numbers>
+  400f45:       41 bc 00 00 00 00       mov    $0x0,%r12d			//r12d = 0	//r12d is like eax to rax
+  400f4b:       8b 45 00                mov    0x0(%rbp),%eax			//eax = first num	//jump here after check
+  400f4e:       83 e8 01                sub    $0x1,%eax			//eax = #1 - 1
+  400f51:       83 f8 05                cmp    $0x5,%eax
+  400f54:       76 05                   jbe    400f5b <phase_6+0x2b>		//Must be below or equal (eax <= 5)
+  400f56:       e8 0f 05 00 00          callq  40146a <explode_bomb>
+
+  400f5b:       41 83 c4 01             add    $0x1,%r12d			//r12d = r12d + 1 (loop counter)
+  400f5f:       41 83 fc 06             cmp    $0x6,%r12d			
+  400f63:       74 22                   je     400f87 <phase_6+0x57>		//jump if r12d = 6 (loop through all 6 #s)
+  400f65:       44 89 e3                mov    %r12d,%ebx			//ebx = r12d
+  400f68:       48 63 c3                movslq %ebx,%rax			//rax = ebx	//Loop back to here
+  400f6b:       8b 55 00                mov    0x0(%rbp),%edx			//edx = (rbp) input
+  400f6e:       3b 54 84 30             cmp    0x30(%rsp,%rax,4),%edx		//edx & (0x30 + rsp + 4*rax)	//rsp + 0x30 = first input, rax is the the counter thing?
+  400f72:       75 05                   jne    400f79 <phase_6+0x49>		//Cannot be equal
+  400f74:       e8 f1 04 00 00          callq  40146a <explode_bomb>
+  400f79:       83 c3 01                add    $0x1,%ebx			//ebx = ebx + 1
+  400f7c:       83 fb 05                cmp    $0x5,%ebx
+  400f7f:       7e e7                   jle    400f68 <phase_6+0x38>		//jump if <= 5	//condition here
+  400f81:       48 83 c5 04             add    $0x4,%rbp			//rbp = rbp + 4
+  400f85:       eb c4                   jmp    400f4b <phase_6+0x1b>		//End of entire loop, back to start
+
+  400f87:       bb 00 00 00 00          mov    $0x0,%ebx			//jump here if we did loop already
+  400f8c:       4c 8d 44 24 30          lea    0x30(%rsp),%r8
+  400f91:       bd 01 00 00 00          mov    $0x1,%ebp
+  400f96:       be 50 37 60 00          mov    $0x603750,%esi			//address of node 1
+  400f9b:       48 89 e7                mov    %rsp,%rdi
+  400f9e:       eb 19                   jmp    400fb9 <phase_6+0x89>
+  400fa0:       48 8b 52 08             mov    0x8(%rdx),%rdx
+  400fa4:       83 c0 01                add    $0x1,%eax
+  400fa7:       39 c8                   cmp    %ecx,%eax
+  400fa9:       75 f5                   jne    400fa0 <phase_6+0x70>
+  400fab:       48 89 14 5f             mov    %rdx,(%rdi,%rbx,2)
+  400faf:       48 83 c3 04             add    $0x4,%rbx
+  400fb3:       48 83 fb 18             cmp    $0x18,%rbx
+  400fb7:       74 10                   je     400fc9 <phase_6+0x99>
+  400fb9:       41 8b 0c 18             mov    (%r8,%rbx,1),%ecx
+  400fbd:       89 e8                   mov    %ebp,%eax
+  400fbf:       48 89 f2                mov    %rsi,%rdx
+  400fc2:       83 f9 01                cmp    $0x1,%ecx
+  400fc5:       7f d9                   jg     400fa0 <phase_6+0x70>
+  400fc7:       eb e2                   jmp    400fab <phase_6+0x7b>
+
+  400fc9:       48 8b 1c 24             mov    (%rsp),%rbx
+  400fcd:       48 8b 44 24 08          mov    0x8(%rsp),%rax
+  400fd2:       48 89 43 08             mov    %rax,0x8(%rbx)
+  400fd6:       48 8b 54 24 10          mov    0x10(%rsp),%rdx
+  400fdb:       48 89 50 08             mov    %rdx,0x8(%rax)
+  400fdf:       48 8b 44 24 18          mov    0x18(%rsp),%rax
+  400fe4:       48 89 42 08             mov    %rax,0x8(%rdx)
+  400fe8:       48 8b 54 24 20          mov    0x20(%rsp),%rdx
+  400fed:       48 89 50 08             mov    %rdx,0x8(%rax)
+  400ff1:       48 8b 44 24 28          mov    0x28(%rsp),%rax
+  400ff6:       48 89 42 08             mov    %rax,0x8(%rdx)
+  400ffa:       48 c7 40 08 00 00 00    movq   $0x0,0x8(%rax)
+  401001:       00
+  401002:       bd 00 00 00 00          mov    $0x0,%ebp
+  401007:       48 8b 43 08             mov    0x8(%rbx),%rax
+  40100b:       8b 13                   mov    (%rbx),%edx
+  40100d:       3b 10                   cmp    (%rax),%edx
+  40100f:       7e 05                   jle    401016 <phase_6+0xe6>	//last conditional loop check 
+  401011:       e8 54 04 00 00          callq  40146a <explode_bomb>
+  401016:       48 8b 5b 08             mov    0x8(%rbx),%rbx
+  40101a:       83 c5 01                add    $0x1,%ebp
+  40101d:       83 fd 05                cmp    $0x5,%ebp
+  401020:       75 e5                   jne    401007 <phase_6+0xd7>
+  401022:       48 83 c4 50             add    $0x50,%rsp
+  401026:       5b                      pop    %rbx
+  401027:       5d                      pop    %rbp
+  401028:       41 5c                   pop    %r12
+  40102a:       c3                      retq
+
+-~*Secret Phase*~-
+
+50
+
+0000000000400ee0 <secret_phase>:
+  400ee0:       53                      push   %rbx
+  400ee1:       e8 7a 06 00 00          callq  401560 <read_line>
+  400ee6:       ba 0a 00 00 00          mov    $0xa,%edx
+  400eeb:       be 00 00 00 00          mov    $0x0,%esi
+  400ef0:       48 89 c7                mov    %rax,%rdi
+  400ef3:       e8 80 fc ff ff          callq  400b78 <strtol@plt>
+  400ef8:       89 c3                   mov    %eax,%ebx
+  400efa:       8d 43 ff                lea    -0x1(%rbx),%eax
+  400efd:       3d e8 03 00 00          cmp    $0x3e8,%eax			//MUST be 0x3e9 (1001) or below
+  400f02:       76 05                   jbe    400f09 <secret_phase+0x29>
+  400f04:       e8 61 05 00 00          callq  40146a <explode_bomb>
+  400f09:       89 de                   mov    %ebx,%esi
+  400f0b:       bf 20 39 60 00          mov    $0x603920,%edi			//binary tree starting at this address (0x... - 32*(0-14) gets all nodes)
+  400f10:       e8 8f ff ff ff          callq  400ea4 <fun7>
+  400f15:       83 f8 01                cmp    $0x1,%eax
+  400f18:       74 05                   je     400f1f <secret_phase+0x3f>
+  400f1a:       e8 4b 05 00 00          callq  40146a <explode_bomb>
+  400f1f:       bf e0 23 40 00          mov    $0x4023e0,%edi
+  400f24:       e8 8f fb ff ff          callq  400ab8 <puts@plt>
+  400f29:       e8 b3 04 00 00          callq  4013e1 <phase_defused>
+  400f2e:       5b                      pop    %rbx
+  400f2f:       c3                      retq
+
+0000000000400ea4 <fun7>:
+  400ea4:       48 83 ec 08             sub    $0x8,%rsp
+  400ea8:       b8 ff ff ff ff          mov    $0xffffffff,%eax
+  400ead:       48 85 ff                test   %rdi,%rdi
+  400eb0:       74 29                   je     400edb <fun7+0x37>
+  400eb2:       8b 17                   mov    (%rdi),%edx		//edx is set to $ initially
+  400eb4:       39 f2                   cmp    %esi,%edx		//esi is input
+  400eb6:       7e 0d                   jle    400ec5 <fun7+0x21>
+  400eb8:       48 8b 7f 08             mov    0x8(%rdi),%rdi
+  400ebc:       e8 e3 ff ff ff          callq  400ea4 <fun7>
+  400ec1:       01 c0                   add    %eax,%eax
+  400ec3:       eb 16                   jmp    400edb <fun7+0x37>
+  400ec5:       b8 00 00 00 00          mov    $0x0,%eax
+  400eca:       39 f2                   cmp    %esi,%edx		//input vs 0x24
+  400ecc:       74 0d                   je     400edb <fun7+0x37>
+  400ece:       48 8b 7f 10             mov    0x10(%rdi),%rdi
+  400ed2:       e8 cd ff ff ff          callq  400ea4 <fun7>
+  400ed7:       8d 44 00 01             lea    0x1(%rax,%rax,1),%eax
+  400edb:       48 83 c4 08             add    $0x8,%rsp
+  400edf:       c3                      retq
+
+00000000004013e1 <phase_defused>:
+  4013e1:       48 83 ec 68             sub    $0x68,%rsp
+  4013e5:       bf 01 00 00 00          mov    $0x1,%edi
+  4013ea:       e8 35 ff ff ff          callq  401324 <send_msg>
+  4013ef:       83 3d 72 29 20 00 06    cmpl   $0x6,0x202972(%rip)        # 603d68 <num_input_strings>
+  4013f6:       75 6d                   jne    401465 <phase_defused+0x84>
+  4013f8:       48 8d 4c 24 08          lea    0x8(%rsp),%rcx
+  4013fd:       48 8d 54 24 0c          lea    0xc(%rsp),%rdx
+  401402:       4c 8d 44 24 10          lea    0x10(%rsp),%r8
+  401407:       be be 24 40 00          mov    $0x4024be,%esi			//%d %d %s
+  40140c:       bf 70 3e 60 00          mov    $0x603e70,%edi			//6 21 (answer to 4)
+  401411:       b8 00 00 00 00          mov    $0x0,%eax
+  401416:       e8 ad f6 ff ff          callq  400ac8 <__isoc99_sscanf@plt>
+  40141b:       83 f8 03                cmp    $0x3,%eax			//must be 3 inputs to activate
+  40141e:       75 31                   jne    401451 <phase_defused+0x70>
+  401420:       48 8d 7c 24 10          lea    0x10(%rsp),%rdi
+  401425:       be c7 24 40 00          mov    $0x4024c7,%esi			//DrEvil, secret phase!!!!
+  40142a:       e8 7d fe ff ff          callq  4012ac <strings_not_equal>
+  40142f:       85 c0                   test   %eax,%eax
+  401431:       75 1e                   jne    401451 <phase_defused+0x70>
+  401433:       bf f8 25 40 00          mov    $0x4025f8,%edi
+  401438:       e8 7b f6 ff ff          callq  400ab8 <puts@plt>
+  40143d:       bf 20 26 40 00          mov    $0x402620,%edi
+  401442:       e8 71 f6 ff ff          callq  400ab8 <puts@plt>
+  401447:       b8 00 00 00 00          mov    $0x0,%eax
+  40144c:       e8 8f fa ff ff          callq  400ee0 <secret_phase>
+  401451:       bf 58 26 40 00          mov    $0x402658,%edi
+  401456:       e8 5d f6 ff ff          callq  400ab8 <puts@plt>
+  40145b:       bf 88 26 40 00          mov    $0x402688,%edi
+  401460:       e8 53 f6 ff ff          callq  400ab8 <puts@plt>
+  401465:       48 83 c4 68             add    $0x68,%rsp
+  401469:       c3                      retq
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
