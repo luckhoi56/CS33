@@ -1,2 +1,4 @@
 # CS33
-Intro to Computer Organization with Professor Reinman Spring 2016
+Spring 2016 CS 33 with Professor Reinman
+
+Intro to Computer Organization, includes all labs/homework assignments
